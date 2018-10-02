@@ -110,6 +110,7 @@ def main():
 
         # Run finished successfully
         # Push data to DB
+        program.add_system(system.uid)
         db.insert_program(program)
         db.insert_system(system)
         observation = database.Observation(

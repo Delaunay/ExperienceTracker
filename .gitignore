@@ -1,3 +1,4 @@
 .idea/*
 __pycache__/*
 ExperienceTracker.egg-info/*
+experience_tracker.egg-info/*

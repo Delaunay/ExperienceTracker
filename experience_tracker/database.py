@@ -28,7 +28,7 @@ class Program:
         return h.hexdigest()
 
     def add_system(self, system_uid):
-        self.systems = list(set(self.systems + system_uid))
+        self.systems.add(system_uid)
 
     @staticmethod
     def get_program(table, name: str, arguments: List[str], version: str ='') -> 'Program':
@@ -76,7 +76,7 @@ class System:
             h.update(str(c).encode('utf-8'))
 
         for g in self.gpus:
-            h.update(g[0])
+            h.update(str(g[0]).encode('utf-8'))
             h.update(g[1].encode('utf-8'))
 
         h.update(str(self.memory[1]).encode('utf-8'))
@@ -164,5 +164,8 @@ class ExperienceDatabase:
 
     def get_observation(self, by: str, value: str):
         return self._observations.search(where(by) == value)
+
+    def observations(self):
+        return self._observations
 
 

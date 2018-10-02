@@ -5,7 +5,7 @@ from setuptools import setup
 
 if __name__ == '__main__':
     setup(
-        name='ExperienceTracker',
+        name='experience_tracker',
         version='0.0.0',
         description='Archive execution data to a database for posterity',
         author='Pierre Delaunay',
