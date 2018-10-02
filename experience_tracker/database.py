@@ -6,6 +6,7 @@ import datetime
 
 TINY_DB = './benchmark.db'
 
+
 class Program:
     def __init__(self, name: str, arguments: List[str], version: str =''):
         self.name: str = name
@@ -16,7 +17,7 @@ class Program:
 
         # List of system for which the Program has ran
         # This is useful for aggregation
-        self.systems: Set[str] = {}
+        self.systems: Set[str] = set()
 
     def compute_uid(self) -> str:
         h = hashlib.sha256()
@@ -53,7 +54,7 @@ class Program:
             })
         else:
             result = results[0]
-            result['systems'] = result['systems'] + self.systems
+            result['systems'] = list(set(result['systems'] + list(self.systems)))
             table.update(result, doc_ids=[result.doc_id])
 
 
@@ -72,13 +73,13 @@ class System:
     def compute_id(self, uid: bool = False) -> str:
         h = hashlib.sha256()
         for c in self.cpu:
-            h.update(c.encode('utf-8'))
+            h.update(str(c).encode('utf-8'))
 
         for g in self.gpus:
             h.update(g[0])
             h.update(g[1].encode('utf-8'))
 
-        h.update(self.memory[1])
+        h.update(str(self.memory[1]).encode('utf-8'))
         if uid:
             h.update(self.hostname.encode('utf-8'))
         return h.hexdigest()
@@ -126,13 +127,14 @@ class Observation:
         })
 
 
-"""
-    Keeps Track of experiences:
-        - program    : definition of an experiment (usually script name + arguments)
-        - observation: results of the jobs ran
-        - system     : system description on which the job was ran
-"""
 class ExperienceDatabase:
+    """
+        Keeps Track of experiences:
+            - program    : definition of an experiment (usually script name + arguments)
+            - observation: results of the jobs ran
+            - system     : system description on which the job was ran
+    """
+
     def __init__(self):
         self.db = TinyDB(TINY_DB)
         self._programs = self.db.table('programs')

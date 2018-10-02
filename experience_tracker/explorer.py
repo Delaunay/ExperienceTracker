@@ -61,24 +61,28 @@ def html_reports(report, cols):
 
 def make_reports_section(reports, date):
     sections = []
-    for file_name, rep in reports.items():
-        nvprof_header = rep['nvprof_header']
-        csv = pd.read_csv(fakefile.FakeFile(rep['csv']), index_col=False)
+    for file_name, reps in reports.items():
 
-        gpu_html, api_html = html_reports(csv, SELECTED_COLS)
+        if 'nvprof' in reps:
+            rep = reps['nvprof']
+            nvprof_header = rep['nvprof_header']
+            csv = pd.read_csv(fakefile.FakeFile(rep['csv']), index_col=False)
 
-        section = """
-            <ul>
-                <li>report file: {}</li>
-                <li>date: {}</li>
-            </ul>
-            <pre class="bg-secondary">{}</pre>
-            <h4>GPU Activities</h4>
-            {}
-            <h4>API calls</h4>
-            {}
-        """.format(file_name, date, ''.join(nvprof_header), gpu_html, api_html)
-        sections.append(section)
+            gpu_html, api_html = html_reports(csv, SELECTED_COLS)
+
+            section = """
+                <ul>
+                    <li>report file: {}</li>
+                    <li>date: {}</li>
+                </ul>
+                <pre class="bg-secondary">{}</pre>
+                <h4>GPU Activities</h4>
+                {}
+                <h4>API calls</h4>
+                {}
+            """.format(file_name, date, ''.join(nvprof_header), gpu_html, api_html)
+            sections.append(section)
+
     return sections
 
 
@@ -127,15 +131,21 @@ def job(uid: str) -> str:
         return html.make_page('no job with (uid={})'.format(uid))
 
     job_ref = db.get_program(by='uid', value=uid)[0]
-    benchmarks = benchmarks[0]['obs']
+    benchmarks = benchmarks
 
     bench_mark_pages = []
     for bench in benchmarks:
         date = bench['date']
-        system = bench['system']
+        system_uid = bench['system_uid']
         reports = bench['reports']
         output = bench.get('stdout')
         outerr = bench.get('stderr')
+
+        print(outerr)
+
+        print(db.systems())
+        system = db.get_system(by='uid', value=system_uid)[0]
+        print(system_uid)
 
         page = """<h2>{} {}</h2>
             <h3>System</h3>
@@ -148,7 +158,7 @@ def job(uid: str) -> str:
             {}
         """.format(
             job_ref['name'], ' '.join(job_ref['arguments']),
-            make_system_info(system['cpu'], system['gpu'], system['memory'], system['hostname']),
+            make_system_info(system['cpu'], system['gpus'], system['memory'], system['hostname']),
             optional_map(output, lambda x: ''.join(x)),
             optional_map(outerr, lambda x: ''.join(x)),
             '\n'.join(make_reports_section(reports, date))
@@ -166,12 +176,43 @@ def safe_convert(x: str) -> float:
         return 0
 
 
+@app.route('/compare/ids/<path:varargs>')
+def compare_ids(varargs = None):
+    if varargs is None:
+        return html.make_page('No comparison id found')
+
+    ids = varargs.split('/')
+    job_refs = [db.get_program(by='uid', value=id)[0] for id in ids]
+    print(job_refs)
+    hostnames = {}
+    max_count = 0
+    hostname = None
+
+    for job in job_refs:
+        machines = job['machines']
+        for h in machines:
+            if h in hostnames:
+                hostnames[h] += 1
+            else:
+                hostnames[h] = 1
+
+            if hostnames[h] > max_count:
+                max_count = hostnames[h]
+                hostname = h
+
+    return make_comparison(job_refs, hostname=hostname)
+
+
 @app.route('/compare/<name>/<hostname>')
 def compare(name: str, hostname: str) -> str:
     name = base64.b64decode(name).decode('utf-8')
     print('Looking for {} ran on {}'.format(name, hostname))
     job_refs = db.get_program(by='name', value=name)
+    print(job_refs)
+    return make_comparison(job_refs, name, hostname)
 
+
+def make_comparison(job_refs, name, hostname):
     if len(job_refs) == 0:
         return job(job_refs['uid'])
 
@@ -222,20 +263,20 @@ def compare(name: str, hostname: str) -> str:
 
     job_description = [
         '<li>{} | {} | {}</li>'.format(job_ref['uid'], key, ' '.join(job_ref['arguments']))
-            for key, job_ref in job_link.items()
+        for key, job_ref in job_link.items()
     ]
 
     gpu_html, api_html = html_reports(total, SELECTED_COLS_COMP)
 
     page = """
         <h1> Jobs </h1>
-        
+
         <ul>
             <li>Name: {}</li>
             <li>Machine: {}</li>
         </ul>
         <ul>{}</ul>
-        
+
         <h1>GPU Activities</h1>
         {}
         <h1>API Calls </h1>
@@ -245,4 +286,9 @@ def compare(name: str, hostname: str) -> str:
     return html.make_page(page)
 
 
+def main():
+    app.run()
 
+
+if __name__ == '__main__':
+    main()
