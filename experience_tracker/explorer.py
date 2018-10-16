@@ -67,6 +67,7 @@ def make_reports_section(reports, date):
         if 'nvprof' in reps:
             rep = reps['nvprof']
             nvprof_header = rep['nvprof_header']
+            print(rep)
             csv = pd.read_csv(fakefile.FakeFile(rep['csv']), index_col=False)
 
             gpu_html, api_html = html_reports(csv, SELECTED_COLS)

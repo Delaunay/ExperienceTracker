@@ -1,0 +1,7 @@
+torch
+pandas
+psutil
+py-cpuinfo
+tinydb
+flask
+request

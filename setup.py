@@ -11,7 +11,11 @@ if __name__ == '__main__':
         author='Pierre Delaunay',
         packages=['experience_tracker'],
         install_requires=[
-          'flask'
+            'flask',
+            'pandas',
+            'py-cpuinfo',
+            'psutil',
+            'tinydb'
         ],
         entry_points={
             'console_scripts': [

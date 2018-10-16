@@ -1,4 +1,7 @@
 .idea/*
-__pycache__/*
+*__pycache__/*
 ExperienceTracker.egg-info/*
 experience_tracker.egg-info/*
+build/*
+dist/*
+benchmark.db

@@ -40,6 +40,7 @@ def make_command_line(program, arguments, nvprof=False, report_name=None):
 
 def main():
     parser = argparse.ArgumentParser(description='Save the experiment result in a local db to keep track of the results')
+    parser.add_argument('--nvprof', action='store_true', default=False, help='Wrap the run script inside a nvprof call')
     parser.add_argument('program')
 
     #
@@ -59,15 +60,19 @@ def main():
     system = database.System.get_system()
     program = database.Program(program_name, arguments)
 
-    tmp_dir = make_nvprof_folder(folder='/tmp/tmpykkm1zsatracker_17282_/')
-    report_file_name_format = tmp_dir + '/report_%p.nvprof'
+    tmp_dir = '/tmp/'
+    report_file_name_format = None
 
-    print('Reports will be generated in {}'.format(tmp_dir))
+    if args.nvprof:
+        tmp_dir = make_nvprof_folder(folder='/tmp/tmpykkm1zsatracker_17282_/')
+        print('Reports will be generated in {}'.format(tmp_dir))
+        report_file_name_format = tmp_dir + '/report_%p.nvprof'
+
     #
     #   Launch Job
     #
     try:
-        cmd = make_command_line(program_name, arguments, True, report_file_name_format)
+        cmd = make_command_line(program_name, arguments, report_name=report_file_name_format, nvprof=args.nvprof)
         #out = subprocess.check_output(cmd, stderr=subprocess.STDOUT )
 
         pipe = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -93,20 +98,20 @@ def main():
         #
         #   Extract nvprof report
         #
-        nvprof_reports = glob.glob(tmp_dir + '/*', recursive=True)
         reports = {}
-
-        for report in nvprof_reports:
-            data = open(report, 'r', encoding='utf-8')
-            lines = data.readlines()
-            data = {
-                # NVPROF adds 3 lines add the beginning of the file starting with ==
-                'nvprof':{
-                    'nvprof_header': lines[:3],
-                    'csv': lines[3:]
+        if args.nvprof:
+            nvprof_reports = glob.glob(tmp_dir + '/*', recursive=True)
+            for report in nvprof_reports:
+                data = open(report, 'r', encoding='utf-8')
+                lines = data.readlines()
+                data = {
+                    # NVPROF adds 3 lines add the beginning of the file starting with ==
+                    'nvprof':{
+                        'nvprof_header': lines[:3],
+                        'csv': lines[3:]
+                    }
                 }
-            }
-            reports[report] = data
+                reports[report] = data
 
         # Run finished successfully
         # Push data to DB
