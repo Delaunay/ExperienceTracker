@@ -25,8 +25,12 @@ Ultimately, we would like the local database to be uploadable to a Json database
     > exp-tracker -- main.py. -b 256 -j 4 -a resnet50 --data /data/img_net --gpu --half
    
 
-    # Consult or compare experiement
+    # Consult or compare experiement using a webserver
     > exp-explorer benchmark.db
+    
+    # make a REPL with a few commands to inspect and compare the experiment
+    > exp-explorer-cli 
+    [  1] > list-programs
     
 # Package Usage
 
@@ -55,6 +59,37 @@ Ultimately, we would like the local database to be uploadable to a Json database
             
          model_metric.push('accuracy_E{}'.format(epoch), acc)
     
-    
     model_metric.push('accucary_final', acc)
     
+# Database
+
+Meant to be super simple
+
+* System Table
+    * CPU: `Tuple[Count: Int, Brand: String, Vendor: String]`
+    * GPU: `List[Tuple[Id: Int, Name: String]]`
+    * Memory:  `Tuple[Total: Long, Available: Long]`
+    * Hostname: `String`
+    * uid: sha256 of all the above parameters (i.e id not included)
+    * id: AutoIncrement
+   
+* Program Table
+    * script `String`
+    * arguments `List[String]`
+    * commit version `git commit hash or None`
+    * script version `sha256 hash` make sure the main script is using an uncommitted version
+    * date: date the program was inserted
+    * uid: sha256 of all the above parameters (so everything except systems and id)
+    * systems: `List[System.id]`
+    * id: AutoIncrement
+    
+* Observation Table
+    * System id: System id where the observation was ran
+    * Program id: Program id that generated that observation
+    * Date: date the observation was added
+    * reports: `Dict[String, Any]`
+        * `'nvprof': {'header': str, 'csv': List[String]}`
+        * `'namespace': {'key': value}`
+    * stdout: `List[String]`
+    * stderr: `List[string]`
+    * id: AutoIncrement
