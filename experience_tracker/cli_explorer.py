@@ -5,28 +5,128 @@ from experience_tracker.database import ExperienceDatabase
 database = ExperienceDatabase()
 
 
-def list_programs(test=False):
-    print('Listing Programs')
-    print(test)
+class NotFound(Exception):
+    def __init__(self, message):
+        self.message = message
 
+
+def str_program(prog):
+    return """
+        * id       : {}
+        * UID      : {}
+        * Program  : {}
+        * Arguments: {}
+        * Systems  : {}
+        * Date     : {}
+        * version  : {}
+    """.format(
+        prog['id'], prog['uid'], prog['name'], prog['arguments'], prog['systems'], prog['date'], prog['version']
+    )
+
+
+def str_system(sys):
+    return """
+        * id      : {}
+        * UID     : {}
+        * cpu     : {}
+        * gpu     : {}
+        * hostname: {}
+        * memmory : {}
+    """.format(
+        sys['id'], sys['uid'], sys['cpu'], sys['gpus'], sys['hostname'], sys['memory']
+    )
+
+
+def str_obs(obs):
+    return """
+        * id         : {}
+        * program_uid: {}
+        * system_uid : {}
+        * date       : {}
+    """.format(
+        obs['id'],
+        obs['program_uid'],
+        obs['system_uid'],
+        obs['date']
+    )
+
+
+def list_programs():
+    """ list all the programs stored in the database """
     for program in database.programs():
-        print(program)
+        print(str_program(program), end='')
+    print()
 
 
 def list_systems():
-    print('Listing Systems')
-    pass
+    """ list all the systems stored in the database """
+    for system in database.systems():
+        print(str_system(system), end='')
+    print()
 
 
 def list_obs():
-    print('Listing Observation')
+    """ list all the observations stored in the database """
+    for obs in database.observations():
+        print(str_obs(obs), end='')
+    print()
+
+
+def show_obs(id):
+    """ display a detailed report of the observation of an experiement """
+    results = database.get_observation(by='id', value=int(id))
+
+    if len(results) == 0:
+        raise NotFound('Not found document with id={}'.format(id))
+
+    doc = results[0]
+
+    system = database.get_system(by='uid', value=doc['system_uid'])[0]
+    program = database.get_program(by='uid', value=doc['program_uid'])[0]
+
+    print('>' * 20)
+    print('    * System')
+    print(str_system(system))
+    print('    * Program')
+    print(str_program(program))
+
+    print('    * STDOUT')
+    print('-' * 20)
+    for line in doc['stdout']:
+        print(line)
+    print('-' * 20)
+
+    print('    * STDERR')
+    print('-' * 20)
+    for line in doc['stderr']:
+        print(line)
+    print('-' * 20)
+
+    for report_name, report in doc['reports'].items():
+        print(report_name)
+        print('=' * len(report_name))
+
+    print('<' * 20)
+
+
+def exit():
+    """ exit the repl"""
     pass
+
+
+def show_help():
+    """ show a list of the commands available """
+    for cmd, fun in defined_commands.items():
+        print("{:>20}: {}".format(cmd, fun.__doc__))
 
 
 defined_commands = {
     'list-programs': list_programs,
     'list-systems': list_systems,
-    'list-observations': list_obs
+    'list-observations': list_obs,
+    'show-observation': show_obs,
+    'exit': exit,
+    'help': show_help,
 }
 
 
@@ -74,7 +174,7 @@ def main():
                 continue
 
             execute_cmd(cmd, args)
-        except TypeError as e:
+        except Exception as e:
             print('    [E] {}'.format(e))
 
 

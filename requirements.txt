@@ -5,3 +5,4 @@ py-cpuinfo
 tinydb
 flask
 request
+flask_classful

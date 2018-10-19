@@ -20,7 +20,8 @@ if __name__ == '__main__':
         entry_points={
             'console_scripts': [
                 'exp-tracker = experience_tracker.tracker:main',
-                'exp-explorer = experience_tracker.explorer:main'
+                'exp-explorer = experience_tracker.explorer:main',
+                'exp-explorer-cli = experience_tracker.cli_explorer:main'
             ]
         }
     )

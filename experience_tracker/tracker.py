@@ -4,10 +4,12 @@ import subprocess
 import tempfile
 import glob
 
-import experience_tracker.database as database
 import datetime
 import argparse
 import hashlib
+
+import experience_tracker.database as database
+from experience_tracker.local_server import make_local_server
 
 
 def make_nvprof_folder(dry_run=False, folder=None):
@@ -43,6 +45,8 @@ def main():
     parser.add_argument('--nvprof', action='store_true', default=False, help='Wrap the run script inside a nvprof call')
     parser.add_argument('program')
 
+    local = make_local_server(8123)
+
     #
     #   Parse arguments
     #
@@ -73,9 +77,11 @@ def main():
     #
     try:
         cmd = make_command_line(program_name, arguments, report_name=report_file_name_format, nvprof=args.nvprof)
-        #out = subprocess.check_output(cmd, stderr=subprocess.STDOUT )
 
-        pipe = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        sub_env = os.environ.copy()
+        sub_env['PYTHONUNBUFFERED'] = 'True'
+
+        pipe = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=sub_env)
         out = []
         # Still print the stdout to user so they can follow the process' progress
         for line in pipe.stdout:
@@ -127,11 +133,13 @@ def main():
             err
         )
         db.insert_observation(observation)
+        local.terminate()
+        sys.exit()
 
     except subprocess.CalledProcessError as e:
         print('Unable to call program')
         print(e)
-        pass
+        sys.exit(-1)
 
 
 if __name__ == '__main__':

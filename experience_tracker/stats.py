@@ -67,3 +67,11 @@ class StatStream(object):
     @property
     def sd(self) -> float:
         return math.sqrt(self.var)
+
+    def dump(self, depth=0):
+        idt = ' ' * depth
+        print('{}  avg: {:.4f}'.format(idt, self.avg))
+        print('{}   sd: {:.4f}'.format(idt, self.sd))
+        print('{}  min: {:.4f}'.format(idt, self.min))
+        print('{}  max: {:.4f}'.format(idt, self.max))
+        print('{}count: {}'.format(idt, self.count))

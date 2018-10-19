@@ -1,5 +1,5 @@
 from flask_classful import FlaskView, route
-from flask import Flask
+from flask import Flask, request
 from multiprocessing import Process
 from typing import *
 
@@ -30,31 +30,47 @@ class LocalServer(FlaskView):
 
         return namespace[key]
 
-    @route('/push/:namespace/:key/:value')
-    def push(self, namespace, key, value):
-        self.get_namespace(namespace)[key] = value
+    @route('/push', methods=['POST'])
+    def push(self):
+        print('receiving_pushing_key_value')
+        json = request.json
+        self.get_namespace(json['namespace'])[json['key']] = json['value']
 
-    @route('/float/stream/:namespace/:key/:value')
-    def push_stat_stream(self, namespace, key, value, drop_nfirst_obs=0):
+        return '', 204
+
+    @route('/float/stream', methods=['POST'])
+    def push_stat_stream(self):
+        print('receiving_pushing_to_stream')
+        json = request.json
+        self.get_namespace(json['namespace'])[json['key']] = json['value']
+
         try:
-            val = float(value)
-            stream = self.get_stream(namespace, key, drop_nfirst_obs)
+            val = float(json['value'])
+            stream = self.get_stream(json['namespace'], json['key'], json['drop_obs'])
             stream += val
+
+            return '', 204
         except Exception as e:
             print('push_stat_stream is expecting a float!')
             raise e
 
-    @route('/task/name/:name/:version/:description')
-    def set_task(self, name, version, description):
-        pass
+    @route('/program', methods=['POST'])
+    def set_program(self):
+        json = request.json
+        return '', 204
 
-    @route('/system/:hostname/:ram/:gpu/:cpu')
+    @route('/system', methods=['POST'])
     def set_system(self):
-        pass
+        json = request.json
+        return '', 204
 
     @route('/log/out/:str')
     def log_out(self, str):
-        pass
+        return '', 204
+
+    @route('/log/out/:str')
+    def log_err(self, str):
+        return '', 204
 
 
 def start_local_server(port) -> Flask:

@@ -2,6 +2,7 @@ from tinydb import TinyDB, where
 import hashlib
 from typing import List, Dict, Set
 import experience_tracker.sysinfo as sysinfo
+from experience_tracker.stats import StatStream
 import datetime
 
 TINY_DB = './benchmark.db'
@@ -12,6 +13,7 @@ class Program:
         self.name: str = name
         self.arguments: List[str] = arguments
         self.version: str = version
+        self.commit_hash: str = None
         self.date: str = str(datetime.datetime.now())
         self.uid: str = self.compute_uid()
 
@@ -40,6 +42,16 @@ class Program:
 
         return self
 
+    def as_json(self):
+        return {
+            'name': self.name,
+            'arguments': self.arguments,
+            'version': self.version,
+            'date': self.date,
+            'systems': list(self.systems),
+            'uid': self.uid
+        }
+
     def _insert(self, table):
         results = table.search(where('uid') == self.uid)
 
@@ -50,7 +62,8 @@ class Program:
                 'version': self.version,
                 'date': self.date,
                 'systems': list(self.systems),
-                'uid': self.uid
+                'uid': self.uid,
+                'id':  len(table)
             })
         else:
             result = results[0]
@@ -66,7 +79,7 @@ class System:
         self.hostname: str = hostname
 
         #  ID: try to group system with similar hardware
-        self.id: str = self.compute_id(uid=False)
+        self.mid: str = self.compute_id(uid=False)
         # UID: Unique
         self.uid: str = self.compute_id(uid=True)
 
@@ -94,6 +107,16 @@ class System:
         )
         return self
 
+    def as_json(self):
+        return {
+            'cpu': self.cpu,
+            'gpus': self.gpus,
+            'memory': self.memory,
+            'hostname': self.hostname,
+            'uid': self.uid,
+            'mid': self.mid
+        }
+
     def _insert(self, table):
         results = table.search(where('uid') == self.uid)
         if len(results) == 0:
@@ -103,7 +126,8 @@ class System:
                 'memory': self.memory,
                 'hostname': self.hostname,
                 'uid': self.uid,
-                'id': self.id
+                'mid': self.mid,
+                'id': len(table)
             })
 
 
@@ -111,7 +135,7 @@ class Observation:
     def __init__(self, program_uid: str, system_uid: str, date: str, reports: Dict, out: List[str], err: List[str]):
         self.program_uid: str = program_uid
         self.system_uid: str = system_uid
-        self.date:str = date
+        self.date: str = date
         self.reports: Dict = reports
         self.stdout: List[str] = out
         self.stderr: List[str] = err
@@ -123,8 +147,26 @@ class Observation:
             'date': self.date,
             'reports': self.reports,
             'stdout': self.stdout,
-            'stderr': self.stderr
+            'stderr': self.stderr,
+            'id': len(table)
         })
+
+    def dump(self):
+        Observation._recursive_dump(self.reports)
+
+    @staticmethod
+    def _recursive_dump(data, depth=0, indentation_size=2):
+        for key, value in data.items():
+            if isinstance(value, dict):
+                print('{}{}:'.format(' ' * depth, key))
+                Observation._recursive_dump(value, depth + indentation_size)
+
+            elif isinstance(value, StatStream):
+                print('{}{}:'.format(' ' * depth, key))
+                value.dump(depth=depth + indentation_size)
+
+            else:
+                print('{}{}:{}'.format(' ' * depth, key, value))
 
 
 class ExperienceDatabase:

@@ -15,7 +15,7 @@ def get_gpu_info():
         count = torch.cuda.device_count()
         return [(i, torch.cuda.get_device_name(i)) for i in range(0, count)]
     except:
-        return None
+        return []
 
 
 def get_hostname():
@@ -25,3 +25,4 @@ def get_hostname():
 def get_memory_info():
     mem = psutil.virtual_memory()
     return mem.available, mem.total
+
