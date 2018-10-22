@@ -6,6 +6,7 @@ from typing import *
 from experience_tracker.database import System
 from experience_tracker.database import Program
 from experience_tracker.database import Observation
+from experience_tracker.database import ExperienceDatabase
 from experience_tracker.stats import StatStream
 
 #
@@ -101,6 +102,13 @@ class LocalTrackLogger:
 
     def dump(self):
         self.observation.dump()
+
+    def persist(self):
+        db = ExperienceDatabase()
+        self.program.add_system(self.system.uid)
+        db.insert_program(self.program)
+        db.insert_system(self.system)
+        db.insert_observation(self.observation)
 
 
 def make_tracker(mode='local', *args, **kwargs):

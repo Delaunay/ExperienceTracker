@@ -17,14 +17,16 @@ def get_parser():
     parser.add_argument('--sleep', default=64, type=int, metavar='HS',
                         help='Sleep Time')
 
+    parser.add_argument('--track-mode', default='local')
+
     return parser
 
 
 def main():
-    log = make_tracker(mode='local')
-
     parser = get_parser()
     args = parser.parse_args()
+
+    log = make_tracker(mode=args.track_mode)
 
     print('Going to sleep for {} s'.format(args.sleep))
 
@@ -40,12 +42,12 @@ def main():
     metrics = log.namespace('metrics')
 
     for i in range(0, 10000):
-        train.push_stream('cpu', random.uniform(0, 1))
-        train.push_stream('gpu', random.uniform(1, 2))
+        train.push_stream('cpu', random.uniform(0, 1), 100)
+        train.push_stream('gpu', random.uniform(1, 2), 10)
 
     metrics.push('accuracy', 0.9876)
 
-    log.dump()
+    log.persist()
     sys.exit(0)
 
 

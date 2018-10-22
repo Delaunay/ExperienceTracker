@@ -177,8 +177,8 @@ class ExperienceDatabase:
             - system     : system description on which the job was ran
     """
 
-    def __init__(self):
-        self.db = TinyDB(TINY_DB)
+    def __init__(self, db_loc=TINY_DB):
+        self.db = TinyDB(db_loc)
         self._programs = self.db.table('programs')
         self._observations = self.db.table('observations')
         self._systems = self.db.table('systems')

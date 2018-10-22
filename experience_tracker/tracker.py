@@ -41,17 +41,24 @@ def make_command_line(program, arguments, nvprof=False, report_name=None):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Save the experiment result in a local db to keep track of the results')
-    parser.add_argument('--nvprof', action='store_true', default=False, help='Wrap the run script inside a nvprof call')
+    parser = argparse.ArgumentParser(
+        description='Save the experiment result in a local db to keep track of the results')
+
+    parser.add_argument('--nvprof', action='store_true', default=False,
+                        help='Wrap the run script inside a nvprof call')
+
+    parser.add_argument('--server', action='store_true', default=False,
+                        help='Start a local server for Inter Process communication')
+
     parser.add_argument('program')
-
-    local = make_local_server(8123)
-
     #
     #   Parse arguments
     #
 
     args, unknown = parser.parse_known_args()
+    local = None
+    if args.server:
+        local = make_local_server(8123)
 
     #
     #   Configure environment
@@ -133,7 +140,8 @@ def main():
             err
         )
         db.insert_observation(observation)
-        local.terminate()
+        if local is not None:
+            local.terminate()
         sys.exit()
 
     except subprocess.CalledProcessError as e:

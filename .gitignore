@@ -5,3 +5,4 @@ experience_tracker.egg-info/*
 build/*
 dist/*
 benchmark.db
+experience_tracker/__pycache__/
